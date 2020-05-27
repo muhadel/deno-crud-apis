@@ -4,45 +4,119 @@ import UserRepository from '../repos/user.ts';
 class UserController {
   readonly userRepository = new UserRepository();
 
-  createUser = async (ctx: RouterContext) => {
-    try {
-      const { request, response } = ctx;
-      if (!request.hasBody) {
-        response.status = 400;
-        response.body = { msg: 'Invalid user data' };
-        return;
-      }
-      const { value } = await request.body();
-      ctx.response.body = await this.userRepository.insertOne(value);
-    } catch (error) {
-      ctx.response.body = 'Internal error';
-    }
-  };
-  deleteUser = async (ctx: RouterContext) => {
-    try {
-      const {
-        params: { id },
-        response
-      } = ctx;
-
-      if (!id) {
-        response.status = 400;
-        response.body = { msg: 'Invalid user data' };
-        return;
-      }
-      console.log('request', id);
-
-      ctx.response.body = await this.userRepository.deleteOne(id);
-    } catch (error) {
-      ctx.response.body = 'Internal error';
-    }
-  };
-
   getUsers = async (ctx: RouterContext) => {
     try {
-      ctx.response.body = await this.userRepository.find();
+      const users = await this.userRepository.findAllUsers();
+      ctx.response.status = 200;
+      ctx.response.body = { success: true, data: users };
     } catch (error) {
+      ctx.response.status = 500;
       ctx.response.body = 'Internal error';
+    }
+  };
+
+  getUser = async ({ response, params: { id } }: RouterContext) => {
+    try {
+      if (!id) {
+        response.status = 400;
+        response.body = { success: false, error: 'Id params is required' };
+        return;
+      }
+      const user = await this.userRepository.findOne(id);
+
+      if (!user) {
+        response.status = 404;
+        response.body = { success: false, error: 'User not found' };
+        return;
+      }
+      response.status = 200;
+      response.body = { success: true, data: user };
+    } catch (error) {
+      response.status = 500;
+      response.body = 'Internal error';
+    }
+  };
+
+  createUser = async ({ request, response }: any) => {
+    try {
+      if (!request.hasBody) {
+        response.status = 400;
+        response.body = { success: false, error: 'Invalid user data' };
+        return;
+      }
+      const {
+        value: { name, age }
+      } = await request.body();
+      if (!name || !age) {
+        response.status = 422;
+        response.body = { success: false, error: 'Invalid user data' };
+        return;
+      }
+      const user = await this.userRepository.insertOne({ name, age });
+      response.status = 201;
+      response.body = { success: true, data: user };
+    } catch (error) {
+      response.status = 500;
+      response.body = 'Internal error';
+    }
+  };
+
+  updateUser = async ({ request, response, params: { id } }: any) => {
+    try {
+      if (!id) {
+        response.status = 400;
+        response.body = { success: false, error: 'Id params is required' };
+        return;
+      }
+      if (!request.hasBody) {
+        response.status = 400;
+        response.body = { success: false, error: 'Invalid user data' };
+        return;
+      }
+      const {
+        value: { name, age }
+      } = await request.body();
+
+      const user = await this.userRepository.findOne(id);
+      if (!user) {
+        response.status = 404;
+        response.body = { success: false, error: 'User not found' };
+        return;
+      }
+      const { modifiedCount } = await this.userRepository.updateOne(id, { name, age });
+      if (modifiedCount === 1) {
+        response.status = 200;
+        response.body = { success: true, msg: 'User updated successfully!' };
+      } else {
+        response.status = 400;
+        response.body = { success: false, error: 'Something went wrong!' };
+      }
+    } catch (error) {
+      response.status = 500;
+      response.body = 'Internal error';
+    }
+  };
+  deleteUser = async ({ response, params: { id } }: RouterContext) => {
+    try {
+      if (!id) {
+        response.status = 400;
+        response.body = { success: false, error: 'Invalid user data' };
+        return;
+      }
+      const user = await this.userRepository.findOne(id);
+      if (!user) {
+        response.status = 404;
+        response.body = { success: false, error: 'User not found' };
+        return;
+      }
+
+      await this.userRepository.deleteOne(id);
+
+      response.status = 200;
+      response.body = { success: true, message: 'User deleted successfully' };
+    } catch (error) {
+      response.status = 500;
+      response.body = 'Internal error';
     }
   };
 }

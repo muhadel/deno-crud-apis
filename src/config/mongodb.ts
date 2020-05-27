@@ -3,6 +3,6 @@ import { DB_HOST, DB_NAME } from './keys.ts';
 
 const client = new MongoClient();
 client.connectWithUri(DB_HOST);
-const db = client.database(DB_NAME);
 
+const db = client.database(DB_NAME);
 export default db;
