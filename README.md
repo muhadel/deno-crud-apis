@@ -1,4 +1,4 @@
-﻿﻿# deno-crud-apis
+# deno-crud-apis
 
 This is a basic crud apis with deno and a middleware framework for Deno called oak.
 
